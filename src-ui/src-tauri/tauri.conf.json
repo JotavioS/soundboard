@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "src-ui",
+  "productName": "JT Soundboard",
   "version": "0.1.0",
   "identifier": "com.soundboard.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "src-ui",
+        "title": "JT Soundboard",
         "width": 800,
         "height": 600,
         "transparent": true
