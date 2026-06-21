@@ -5,6 +5,9 @@ use std::sync::Mutex;
 use std::process::{Child, Command, Stdio};
 use tauri::Manager;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 struct EngineState(Mutex<Option<Child>>);
 
 use serde::{Deserialize, Serialize};
@@ -543,10 +546,17 @@ fn main() {
             let core_dir = core_path.parent().unwrap_or(std::path::Path::new(""));
             println!("Starting C++ Engine at: {:?}, working dir: {:?}", core_path, core_dir);
 
-            let child = Command::new(&core_path)
-                .current_dir(core_dir)
-                .stdin(Stdio::piped())
-                .spawn();
+            #[cfg(windows)]
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+            let mut cmd = Command::new(&core_path);
+            cmd.current_dir(core_dir)
+                .stdin(Stdio::piped());
+
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+
+            let child = cmd.spawn();
             
             match child {
                 Ok(c) => {
