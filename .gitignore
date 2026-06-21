@@ -1,0 +1,8 @@
+build-cpp/
+*.onnx
+*.zip
+*.pth
+*.index
+src-ui/node_modules/
+src-ui/dist/
+src-ui/src-tauri/target/
