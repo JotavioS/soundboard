@@ -31,6 +31,7 @@ std::atomic<bool> useVoiceChanger(false);
 std::atomic<bool> hearMyself(false);
 std::atomic<bool> useSatanic1(false);
 std::atomic<bool> useSatanic2(false);
+std::atomic<bool> useSatanic3(false);
 float soundVolume = 1.0f;
 std::atomic<bool> running(true);
 std::atomic<bool> deviceChangeRequested(false);
@@ -152,6 +153,7 @@ void ipcCommandThread(zmq::context_t* context) {
                     useSatanic1.store(enabled);
                     if (enabled) {
                         useSatanic2.store(false);
+                        useSatanic3.store(false);
                     }
                     std::cout << "Satanic 1 set to: " << enabled << std::endl;
                 } else if (cmd == "SET_SATANIC_2") {
@@ -159,8 +161,17 @@ void ipcCommandThread(zmq::context_t* context) {
                     useSatanic2.store(enabled);
                     if (enabled) {
                         useSatanic1.store(false);
+                        useSatanic3.store(false);
                     }
                     std::cout << "Satanic 2 set to: " << enabled << std::endl;
+                } else if (cmd == "SET_SATANIC_3") {
+                    bool enabled = j.value("enabled", false);
+                    useSatanic3.store(enabled);
+                    if (enabled) {
+                        useSatanic1.store(false);
+                        useSatanic2.store(false);
+                    }
+                    std::cout << "Satanic 3 set to: " << enabled << std::endl;
                 } else if (cmd == "GET_INPUT_DEVICES") {
                     RtAudio audio_temp;
                     std::vector<std::string> device_names;
@@ -503,17 +514,25 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int nBufferFra
         }
     }
     
-    // --- Apply Voice Effects (Satanic 1 / Satanic 2) ---
+    // --- Apply Voice Effects (Satanic 1 / Satanic 2 / Satanic 3) ---
     static PitchShifter pitchShifter1;
     static Chorus chorus1;
+    
     static PitchShifter pitchShifter2;
     static float ringModPhase = 0.0f;
     
+    static PitchShifter pitchShifter3_1;
+    static PitchShifter pitchShifter3_2;
+    static Chorus chorus3;
+    static float ringModPhase3 = 0.0f;
+    
     static float currentMix1 = 0.0f;
     static float currentMix2 = 0.0f;
+    static float currentMix3 = 0.0f;
     
     float targetMix1 = useSatanic1.load() ? 1.0f : 0.0f;
     float targetMix2 = useSatanic2.load() ? 1.0f : 0.0f;
+    float targetMix3 = useSatanic3.load() ? 1.0f : 0.0f;
     float sampleRate = 48000.0f;
     
     for (unsigned int i = 0; i < nBufferFrames; ++i) {
@@ -522,6 +541,7 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int nBufferFra
         
         currentMix1 += (targetMix1 - currentMix1) * 0.005f;
         currentMix2 += (targetMix2 - currentMix2) * 0.005f;
+        currentMix3 += (targetMix3 - currentMix3) * 0.005f;
         
         float fx1 = sample;
         if (currentMix1 > 0.0001f) {
@@ -544,11 +564,31 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int nBufferFra
             else if (fx2 < -0.8f) fx2 = -0.8f;
         }
         
+        float fx3 = sample;
+        if (currentMix3 > 0.0001f) {
+            float layer1 = pitchShifter3_1.process(fx3, 0.60f);
+            layer1 = chorus3.process(layer1, sampleRate, 1.5f, 5.0f, 0.5f);
+            
+            float carrier = sinf(ringModPhase3);
+            ringModPhase3 += 2.0f * M_PI * 40.0f / sampleRate;
+            if (ringModPhase3 >= 2.0f * M_PI) ringModPhase3 -= 2.0f * M_PI;
+            float modulated = fx3 * carrier;
+            float layer2 = pitchShifter3_2.process(modulated, 0.70f);
+            
+            fx3 = 0.6f * layer1 + 0.4f * layer2;
+            fx3 = saturate(fx3, 1.8f);
+            if (fx3 > 0.85f) fx3 = 0.85f;
+            else if (fx3 < -0.85f) fx3 = -0.85f;
+        }
+        
         if (currentMix1 > 0.0001f) {
             processed = (1.0f - currentMix1) * processed + currentMix1 * fx1;
         }
         if (currentMix2 > 0.0001f) {
             processed = (1.0f - currentMix2) * processed + currentMix2 * fx2;
+        }
+        if (currentMix3 > 0.0001f) {
+            processed = (1.0f - currentMix3) * processed + currentMix3 * fx3;
         }
         
         out[i] = processed;

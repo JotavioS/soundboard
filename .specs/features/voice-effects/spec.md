@@ -58,6 +58,20 @@ These effects must be toggleable from a new UI tab called "Efeitos de Voz", with
 
 ---
 
+### P1: Satanic 3 Hybrid DSP Pipeline
+**User Story**: As a user, I want the "Satanic 3" effect to combine the Pitch Shifting and Chorus of Satanic 1 with the Ring Modulation, Layer Mix, and Distortion/Clipping of Satanic 2.
+
+**Acceptance Criteria**:
+1. When Satanic 3 is active, the C++ audio callback processes the buffer.
+2. The processing includes:
+   - Layer 1: Pitched down (0.60x) + Chorus modulation (1.5Hz).
+   - Layer 2: Ring modulated (40Hz carrier) + Pitch shifted slightly (0.70x).
+   - Dual Layer Mix: 60% Layer 1 + 40% Layer 2.
+   - Saturated drive (1.8x) + hard clamping at ±0.85.
+3. The transition is smoothed to avoid clicks.
+
+---
+
 ## Requirement Traceability
 
 | Requirement ID | Story                                | Phase  | Status  |
@@ -65,13 +79,14 @@ These effects must be toggleable from a new UI tab called "Efeitos de Voz", with
 | VFX-01         | Voice Effects Tab in UI              | Specify| Pending |
 | VFX-02         | Satanic 1 DSP C++ Implementation     | Specify| Pending |
 | VFX-03         | Satanic 2 Raw Buffer DSP             | Specify| Pending |
-| VFX-04         | Smooth Lerp transition (anti-click)  | Specify| Pending |
-| VFX-05         | IPC Commands and State Sync          | Specify| Pending |
+| VFX-04         | Satanic 3 Hybrid DSP Implementation  | Specify| Pending |
+| VFX-05         | Smooth Lerp transition (anti-click)  | Specify| Pending |
+| VFX-06         | IPC Commands and State Sync          | Specify| Pending |
 
 ---
 
 ## Success Criteria
 
 - [ ] The app compiles and runs.
-- [ ] Clicking "Satanic 1" or "Satanic 2" modifies the real-time voice capture immediately.
+- [ ] Clicking "Satanic 1", "Satanic 2", or "Satanic 3" modifies the real-time voice capture immediately.
 - [ ] No audio pops, crackles, or glitches are introduced when toggling the effects.

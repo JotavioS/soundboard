@@ -16,6 +16,7 @@ function App() {
 
   const [satanic1, setSatanic1] = useState(false);
   const [satanic2, setSatanic2] = useState(false);
+  const [satanic3, setSatanic3] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'soundboard' | 'settings' | 'voicebox' | 'web' | 'voice-effects'>('soundboard');
   const [webUrl, setWebUrl] = useState<string>('');
@@ -531,7 +532,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl">
                 {/* Satanic 1 Card */}
                 <div 
                   className={`bg-zinc-900/40 backdrop-blur-sm border rounded-3xl p-8 shadow-xl transition-all duration-500 relative overflow-hidden group ${
@@ -558,7 +559,9 @@ function App() {
                         setSatanic1(nextState);
                         if (nextState) {
                           setSatanic2(false);
+                          setSatanic3(false);
                           await invoke('toggle_satanic_2', { enabled: false });
+                          await invoke('toggle_satanic_3', { enabled: false });
                         }
                         try {
                           await invoke('toggle_satanic_1', { enabled: nextState });
@@ -620,7 +623,9 @@ function App() {
                         setSatanic2(nextState);
                         if (nextState) {
                           setSatanic1(false);
+                          setSatanic3(false);
                           await invoke('toggle_satanic_1', { enabled: false });
+                          await invoke('toggle_satanic_3', { enabled: false });
                         }
                         try {
                           await invoke('toggle_satanic_2', { enabled: nextState });
@@ -652,6 +657,70 @@ function App() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-red-400">✂️</span> <b>Soft Clipping:</b> Limitador rígido em ±0.8 para distorção crua.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Satanic 3 Card */}
+                <div 
+                  className={`bg-zinc-900/40 backdrop-blur-sm border rounded-3xl p-8 shadow-xl transition-all duration-500 relative overflow-hidden group ${
+                    satanic3 
+                      ? 'border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)] scale-[1.01]' 
+                      : 'border-white/5 hover:border-white/10 hover:scale-[1.02]'
+                  }`}
+                >
+                  {/* Decorative background glow */}
+                  <div className={`absolute -right-16 -top-16 w-32 h-32 rounded-full blur-3xl transition-all duration-500 ${
+                    satanic3 ? 'bg-orange-600/20' : 'bg-transparent group-hover:bg-orange-600/5'
+                  }`} />
+                  
+                  <div className="flex items-start justify-between relative z-10 mb-6">
+                    <div>
+                      <span className="text-4xl">⚡🧬</span>
+                      <h3 className="text-2xl font-bold mt-4 text-zinc-100">Satanic 3</h3>
+                      <p className="text-zinc-500 text-xs mt-1 uppercase tracking-wider font-semibold">Demonic Hybrid Profile</p>
+                    </div>
+                    
+                    <button
+                      onClick={async () => {
+                        const nextState = !satanic3;
+                        setSatanic3(nextState);
+                        if (nextState) {
+                          setSatanic1(false);
+                          setSatanic2(false);
+                          await invoke('toggle_satanic_1', { enabled: false });
+                          await invoke('toggle_satanic_2', { enabled: false });
+                        }
+                        try {
+                          await invoke('toggle_satanic_3', { enabled: nextState });
+                        } catch (e) {
+                          console.error("Failed to toggle Satanic 3", e);
+                          setSatanic3(!nextState);
+                        }
+                      }}
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 outline-none ${
+                        satanic3 ? 'bg-orange-500' : 'bg-zinc-700'
+                      }`}
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-300 ${
+                        satanic3 ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <p className="text-zinc-300 text-sm leading-relaxed mb-6 relative z-10">
+                    O efeito demoníaco definitivo, combinando as técnicas de ambos os perfis:
+                  </p>
+                  
+                  <ul className="text-xs text-zinc-400 space-y-2.5 relative z-10 border-t border-white/5 pt-4">
+                    <li className="flex items-center gap-2">
+                      <span className="text-orange-400">🔥</span> <b>DSP Chain:</b> Pitch shift grave (0.60x) + Chorus modulado.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-orange-400">⚡</span> <b>Modulator:</b> Camada de Ring Modulation a 40Hz.
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-orange-400">🧬</span> <b>Distortion & Clipping:</b> Saturação agressiva (1.8x) + Clamping.
                     </li>
                   </ul>
                 </div>
