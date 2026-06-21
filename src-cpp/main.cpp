@@ -32,6 +32,7 @@ std::atomic<bool> hearMyself(false);
 std::atomic<bool> useSatanic1(false);
 std::atomic<bool> useSatanic2(false);
 std::atomic<bool> useSatanic3(false);
+std::atomic<bool> useNoiseSuppression(true);
 float soundVolume = 1.0f;
 std::atomic<bool> running(true);
 std::atomic<bool> deviceChangeRequested(false);
@@ -172,6 +173,10 @@ void ipcCommandThread(zmq::context_t* context) {
                         useSatanic2.store(false);
                     }
                     std::cout << "Satanic 3 set to: " << enabled << std::endl;
+                } else if (cmd == "SET_NOISE_SUPPRESSION") {
+                    bool enabled = j.value("enabled", true);
+                    useNoiseSuppression.store(enabled);
+                    std::cout << "Noise Suppression set to: " << enabled << std::endl;
                 } else if (cmd == "GET_INPUT_DEVICES") {
                     RtAudio audio_temp;
                     std::vector<std::string> device_names;
@@ -452,6 +457,14 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int nBufferFra
     float *out = static_cast<float *>(outputBuffer);
     
     if (in == nullptr || out == nullptr) return 0;
+    
+    // --- Real-Time Noise Suppression ---
+    static RealTimeDenoise denoiser;
+    if (useNoiseSuppression.load()) {
+        denoiser.process(in, nBufferFrames);
+    } else {
+        denoiser.reset();
+    }
     
     size_t numBytes = nBufferFrames * sizeof(float);
     

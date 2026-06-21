@@ -141,6 +141,17 @@ async fn toggle_satanic_3(enabled: bool) -> Result<(), String> {
     send_zmq_command(json_str).await
 }
 
+#[tauri::command]
+async fn toggle_noise_suppression(enabled: bool) -> Result<(), String> {
+    let cmd = serde_json::json!({
+        "cmd": "SET_NOISE_SUPPRESSION",
+        "enabled": enabled
+    });
+    
+    let json_str = serde_json::to_string(&cmd).map_err(|e| e.to_string())?;
+    send_zmq_command(json_str).await
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct LoadModelCommand {
     cmd: String,
@@ -501,6 +512,7 @@ fn main() {
             toggle_satanic_1,
             toggle_satanic_2,
             toggle_satanic_3,
+            toggle_noise_suppression,
             install_audio_cable,
             get_voice_models,
             import_voice_model,

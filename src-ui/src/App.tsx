@@ -17,6 +17,7 @@ function App() {
   const [satanic1, setSatanic1] = useState(false);
   const [satanic2, setSatanic2] = useState(false);
   const [satanic3, setSatanic3] = useState(false);
+  const [noiseSuppression, setNoiseSuppression] = useState(true);
 
   const [activeTab, setActiveTab] = useState<'soundboard' | 'settings' | 'voicebox' | 'web' | 'voice-effects'>('soundboard');
   const [webUrl, setWebUrl] = useState<string>('');
@@ -263,6 +264,12 @@ function App() {
         const savedEmbedder = localStorage.getItem('soundboard_embedder');
         if (savedEmbedder) setEmbedder(savedEmbedder);
 
+        const savedNoise = localStorage.getItem('soundboard_noise_suppression');
+        if (savedNoise !== null) {
+          const enabled = savedNoise === 'true';
+          setNoiseSuppression(enabled);
+          invoke('toggle_noise_suppression', { enabled }).catch(err => console.error(err));
+        }
       } catch (err) {
         console.error("Error loading app data:", err);
       } finally {
@@ -517,6 +524,19 @@ function App() {
               }}
             >
               🎧 Hear Myself {hearMyself ? 'ON' : 'OFF'}
+            </button>
+            <button
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 border ${noiseSuppression ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'bg-zinc-800/80 border-white/10 text-zinc-300 hover:bg-zinc-700'}`}
+              onClick={async () => {
+                const newState = !noiseSuppression;
+                setNoiseSuppression(newState);
+                localStorage.setItem('soundboard_noise_suppression', newState.toString());
+                try {
+                  await invoke('toggle_noise_suppression', { enabled: newState });
+                } catch (e) { console.error("Failed to toggle noise suppression", e); }
+              }}
+            >
+              🔇 Noise Suppression {noiseSuppression ? 'ON' : 'OFF'}
             </button>
           </header>
 

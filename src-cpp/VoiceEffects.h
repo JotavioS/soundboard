@@ -129,3 +129,72 @@ inline float saturate(float input, float drive) {
     if (x < -1.0f) return -1.0f;
     return (x - (x * x * x) / 3.0f) * 1.5f;
 }
+
+#include <deque>
+#include "rnnoise.h"
+
+// Low-latency wrapper for RNNoise block processing (10ms frame size / 480 samples)
+class RealTimeDenoise {
+private:
+    DenoiseState* rnnoise_state = nullptr;
+    std::deque<float> inputRing;
+    std::deque<float> outputRing;
+    bool primed = false;
+    
+public:
+    RealTimeDenoise() {
+        rnnoise_state = rnnoise_create(NULL);
+    }
+    
+    ~RealTimeDenoise() {
+        if (rnnoise_state) {
+            rnnoise_destroy(rnnoise_state);
+        }
+    }
+    
+    void reset() {
+        inputRing.clear();
+        outputRing.clear();
+        primed = false;
+    }
+    
+    void process(float* buffer, unsigned int nFrames) {
+        // Push input samples to input ring
+        for (unsigned int i = 0; i < nFrames; ++i) {
+            inputRing.push_back(buffer[i]);
+        }
+        
+        // Process all available 480-sample blocks
+        while (inputRing.size() >= 480) {
+            float rnn_buf[480];
+            for (int i = 0; i < 480; ++i) {
+                rnn_buf[i] = inputRing[i] * 32768.0f;
+            }
+            
+            rnnoise_process_frame(rnnoise_state, rnn_buf, rnn_buf);
+            
+            // Push processed to output ring
+            for (int i = 0; i < 480; ++i) {
+                outputRing.push_back(rnn_buf[i] / 32768.0f);
+            }
+            
+            // Erase processed block from input ring
+            inputRing.erase(inputRing.begin(), inputRing.begin() + 480);
+        }
+        
+        // We only start outputting once we have accumulated enough samples to cover nFrames
+        if (!primed && outputRing.size() >= nFrames) {
+            primed = true;
+        }
+        
+        if (primed && outputRing.size() >= nFrames) {
+            for (unsigned int i = 0; i < nFrames; ++i) {
+                buffer[i] = outputRing.front();
+                outputRing.pop_front();
+            }
+        } else {
+            // If not primed, output silence to prevent noise glitches
+            std::fill(buffer, buffer + nFrames, 0.0f);
+        }
+    }
+};
