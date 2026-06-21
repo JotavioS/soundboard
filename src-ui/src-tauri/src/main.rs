@@ -531,8 +531,20 @@ fn main() {
             trim_sound_file
         ])
         .setup(|app| {
-            let core_path = "c:/development/soundboard/build-cpp/Release/SoundboardCore.exe";
-            let child = Command::new(core_path)
+            #[cfg(debug_assertions)]
+            let core_path = std::path::PathBuf::from("c:/development/soundboard/build-cpp/Release/SoundboardCore.exe");
+
+            #[cfg(not(debug_assertions))]
+            let core_path = app
+                .path()
+                .resolve("core/SoundboardCore.exe", tauri::path::BaseDirectory::Resource)
+                .expect("Failed to resolve SoundboardCore.exe path");
+
+            let core_dir = core_path.parent().unwrap_or(std::path::Path::new(""));
+            println!("Starting C++ Engine at: {:?}, working dir: {:?}", core_path, core_dir);
+
+            let child = Command::new(&core_path)
+                .current_dir(core_dir)
                 .stdin(Stdio::piped())
                 .spawn();
             
