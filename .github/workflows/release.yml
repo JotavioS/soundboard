@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: src-ui/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd src-ui
+          npm ci
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build C++ Core Engine
+        shell: pwsh
+        run: |
+          cmake -B build-cpp -S src-cpp -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-cpp --config Release --target SoundboardCore
+
+      - name: Package C++ Core resources into Tauri
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path 'src-ui/src-tauri/core'
+          Copy-Item -Path 'build-cpp/Release/SoundboardCore.exe', 'build-cpp/Release/onnxruntime.dll', 'build-cpp/Release/onnxruntime_providers_shared.dll', 'build-cpp/Release/rtaudio.dll', 'build-cpp/Release/libzmq-v145-mt-4_3_6.dll' -Destination 'src-ui/src-tauri/core/' -Force
+
+      - name: Build Tauri Desktop Application
+        run: |
+          cd src-ui
+          npm run tauri build
+
+      - name: Create GitHub Release and Upload Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-ui/src-tauri/target/release/bundle/msi/*.msi
+            src-ui/src-tauri/target/release/bundle/nsis/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
